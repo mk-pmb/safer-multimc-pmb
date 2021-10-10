@@ -1,0 +1,27 @@
+{ "name": "safer-multimc-pmb",
+  "version": "0.211010.0",
+  "description": "My attempt to jail MultiMC, the alternative Minecraft launcher.",
+  "keywords": [
+    "chroot",
+    "jail",
+    "minecraft",
+    "multimc",
+    "sandbox"
+  ],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/safer-multimc-pmb/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/safer-multimc-pmb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/safer-multimc-pmb/issues"
+  },
+  "contributors": [],
+
+  "private": true, "license": "ISC",
+
+
+  "npm vs. BOM = Unexpected token": "-*- coding: UTF-8 -*-"
+}
