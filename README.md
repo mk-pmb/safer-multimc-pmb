@@ -9,6 +9,19 @@ My attempt to jail MultiMC, the alternative Minecraft launcher.
 <!--/#echo -->
 
 
+
+Privacy Notice
+--------------
+
+The installer in this repo tries to disable MultiMC's analytics,
+including the wall of text
+that you would have been presented with on first launch.
+Please ensure you know all information relevant to you,
+and review the analytics settings to ensure they are what you expect.
+
+
+
+
 Motivation
 ----------
 

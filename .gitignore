@@ -1,0 +1,13 @@
+
+# Caches:
+/download-cache
+
+# Persistent user data:
+/persist
+
+# Upstream files that might change in future versions:
+/multimc
+
+
+
+# Unsorted files (this section should be empy):
