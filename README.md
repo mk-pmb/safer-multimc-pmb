@@ -53,6 +53,24 @@ on files in unpredictable locations, so unfortunately the MultiMC devs
 
 
 
+Installation
+------------
+
+```bash
+# Remove potential remains of the old MultiMC install:
+rm --one-file-system --recursive -- multimc/
+
+# Download and install the latest supported MultiMC:
+./smmc.sh install_multimc
+
+# If you don't have the user account yet, create it:
+./smmc.sh reinstall_user_account
+
+# Launch MultiMC:
+./smmc.sh launch_multimc
+```
+
+
 
 
 
