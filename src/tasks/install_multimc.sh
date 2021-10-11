@@ -2,11 +2,7 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 
-function install_multimc () {
-  export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
-  local SELFPATH="$(readlink -m -- "$BASH_SOURCE"/..)"
-  cd -- "$SELFPATH" || return $?
-
+function smmc_task_install_multimc () {
   # The essential install strategy is based on
   #   https://github.com/MultiMC/MultiMC5/blob/29f304f0703612d56b26
   #   d111cf802e145ae5896f/launcher/package/ubuntu/multimc/opt/multimc/run.sh
@@ -30,7 +26,7 @@ function install_multimc () {
   local CACHE_DIR='download-cache'
   local SAVE_AS="$CACHE_DIR/$(basename -- "$DL_URL")"
   wget_dl "$DL_URL" "$SAVE_AS" || return $?
-  verify_tarball "$SAVE_AS" || return $?
+  verify_tarball "$SAVE_AS" trusted_tarballs.md || return $?
   unpack_tarball "$SAVE_AS" || return $?
 }
 
@@ -58,23 +54,6 @@ function wget_dl () {
 }
 
 
-function verify_tarball () {
-  local TARBALL="$1"
-  local DL_SIZE="$(stat -c %s -- "$TARBALL")"
-  local HASH_ALGO='sha512'
-  local DL_HASH="$("$HASH_ALGO"sum --binary -- "$TARBALL" \
-    | LANG=C sed -re 's~ .*$~~; s~\S{8}~ &~g; s~^ ~~')"
-  local DL_CFPR="size $DL_SIZE $HASH_ALGO $DL_HASH"
-  DL_CFPR="${DL_CFPR// /_}"
-  echo "D: Downloaded tarball content fingerprint: $DL_CFPR"
-  local TRUSTED=
-  grep -qFe '* `'"$DL_CFPR"'`' -- trusted_tarballs.md || return 4$(
-    echo "E: Downloaded tarball is not listed as trusted." \
-      "This usually indicates a corrupted download." >&2)
-  echo "D: Found that fingerprint in trust list. Gonna extract."
-}
-
-
 function unpack_tarball () {
   local TARBALL="$1"
   local UNP_DIR='unpack.tmp'
@@ -92,20 +71,20 @@ function unpack_tarball () {
     )
   tar "${TAR_OPT[@]}" || return $?$(echo "E: tar unpack failed: rv=$?" >&2)
 
-  local BIN_DIR='multimc'
-  local ELF_BFN='multimc_core.elf'
-  local LAUNCHER="$BIN_DIR/multimc_inner.sh"
+  local MMC_BIN="$SMMC_BASEDIR/${CFG[mmc_bin_dir]}"
+  local INNER_ORIG="$MMC_BIN/orig_launcher.sh"
+  local INNER_MODDED="$MMC_BIN/multimc_inner.sh"
 
-  echo "D: Re-arranging files into '$BIN_DIR':"
-  mkdir --parents -- "$BIN_DIR"
+  echo "D: Re-arranging files into '$MMC_BIN':"
+  mkdir --parents -- "$MMC_BIN"
+  mv --no-target-directory -- "$UNP_DIR"/MultiMC/bin/MultiMC \
+    "$MMC_BIN/${CFG[mmc_elf_bfn]}" || return $?
+
   mv --no-target-directory \
-    -- "$UNP_DIR"/MultiMC/bin/MultiMC "$BIN_DIR/$ELF_BFN" || return $?
+    -- "$UNP_DIR"/MultiMC/MultiMC "$INNER_ORIG" || return $?
+  chmod a-x -- "$INNER_ORIG" || return $?
 
-  mv --no-target-directory \
-    -- "$UNP_DIR"/MultiMC/MultiMC "$LAUNCHER".orig || return $?
-  chmod a-x -- "$LAUNCHER".orig || return $?
-
-  mv --target-directory="$BIN_DIR" \
+  mv --target-directory="$MMC_BIN" \
     -- "$UNP_DIR"/MultiMC/bin/[A-Za-z]* || return $?
   rmdir -- "$UNP_DIR"/MultiMC/bin
   rmdir -- "$UNP_DIR"/MultiMC
@@ -117,14 +96,31 @@ function unpack_tarball () {
   echo 'D: Hotpatching launcher:'
   LANG=C sed -rf <(echo '
     1a HOME="\$(readlink -m -- "\$BASH_SOURCE"/..)"; export HOME; cd || exit 2
-    s~/bin/MultiMC\b~/'"$ELF_BFN"'~g
+    s~/bin/MultiMC\b~/'"${CFG[mmc_elf_bfn]}"'~g
     s~^(\s*)(chmod \+x)~\1echo "D: skip: \2"~
-    ') -- "$LAUNCHER".orig >"$LAUNCHER" || return $?
-  chmod a+x -- "$LAUNCHER" || return $?
-  ln --symbolic --no-target-directory --  "$(basename -- "$LAUNCHER"
-    )" "$(dirname -- "$LAUNCHER")/multimc-sandboxed" || return $?
+    ') -- "$INNER_ORIG" >"$INNER_MODDED" || return $?
+  chmod a+x -- "$INNER_MODDED" || return $?
+  ln --symbolic --no-target-directory \
+    -- "${INNER_MODDED##*/}" "$MMC_BIN/${CFG[sbx_inner_cmd]}" || return $?
+
+  echo "D: Prepare launcher config:"
+  prepare_mmc_ini || return $?
 
   echo 'D: Install succeeded.'
+}
+
+
+function prepare_mmc_ini () {
+  local PERSI="$SMMC_BASEDIR/${CFG[persist_dir]}"
+  mkdir --parents -- "$PERSI"
+  local P_INI="$PERSI"/multimc.ini
+  local DF_INI="$SMMC_BASEDIR/src/cfg/default_multimc.ini"
+  [ -f "$P_INI" ] || grep -Pe '^\w' -- "$DF_INI" >"$P_INI" || return $?$(
+    echo "E: Failed (rv=$?) to create config from defaults: $P_INI" >&2)
+  local M_INI="$SMMC_BASEDIR/${CFG[mmc_bin_dir]}/multimc.cfg"
+  [ -L multimc/multimc.cfg ] \
+    || ln --symbolic --relative -- "$P_INI" "$M_INI" \
+    || return $?$(echo "E: Failed (rv=$?) to create config symlink" >&2)
 }
 
 
@@ -135,4 +131,4 @@ function unpack_tarball () {
 
 
 
-install_multimc "$@"; exit $?
+return 0

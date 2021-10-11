@@ -1,0 +1,16 @@
+# -*- coding: utf-8, tab-width: 2 -*-
+
+CFG[mmc_bin_dir]='multimc'
+CFG[mmc_elf_bfn]='multimc_core.elf'
+CFG[sbx_inner_cmd]='multimc-sandboxed'
+
+CFG[sbx_username]='smultimc'
+# ^-- `man useradd` says Ubuntu can handle up to 32 chars.
+#     However, to stay extra safe, try to keep it to 14 at most.
+
+CFG[sbx_groupname]="${CFG[sbx_username]}"
+# CFG[sbx_groupname]='games'
+
+CFG[sbx_userhome]="/usr/games/${CFG[proj_name]}"
+
+CFG[sbx_user_descr]="Sandbox account for ${CFG[proj_name]}"

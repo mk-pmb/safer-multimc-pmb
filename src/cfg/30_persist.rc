@@ -1,0 +1,4 @@
+# -*- coding: utf-8, tab-width: 2 -*-
+
+# Relative path of the subdirectory 
+CFG[persist_dir]='persist'
