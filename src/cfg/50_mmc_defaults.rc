@@ -3,11 +3,13 @@
 CFG[mmcdflt:Analytics]='false'
 CFG[mmcdflt:AnalyticsClientID]='00000000-0000-0000-0000-000000000000'
 CFG[mmcdflt:AnalyticsSeen]='2'
+CFG[mmcdflt:ApplicationTheme]='dark'
 CFG[mmcdflt:AutoUpdate]='false'
 CFG[mmcdflt:JavaPath]='java'
 CFG[mmcdflt:Language]='en_US'
 CFG[mmcdflt:MaxMemAlloc]='6144'
 CFG[mmcdflt:MinMemAlloc]='1024'
+
 CFG[mmcdflt:LastHostname]="$HOSTNAME"
 
 parse_proxy_url CFG[mmcdflt:Proxy%] \
