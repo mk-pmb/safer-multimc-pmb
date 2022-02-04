@@ -114,8 +114,9 @@ function prepare_mmc_ini () {
   local PERSI="$SMMC_BASEDIR/${CFG[persist_dir]}"
   mkdir --parents -- "$PERSI"
   local P_INI="$PERSI"/multimc.ini
-  local DF_INI="$SMMC_BASEDIR/src/cfg/default_multimc.ini"
-  [ -f "$P_INI" ] || grep -Pe '^\w' -- "$DF_INI" >"$P_INI" || return $?$(
+  local GEN_INI='generate_default_mmc_ini'
+  source -- "$SMMC_BASEDIR/src/tasks/$GEN_INI".sh || return $?
+  [ -f "$P_INI" ] || smmc_task_"$GEN_INI" >"$P_INI" || return $?$(
     echo "E: Failed (rv=$?) to create config from defaults: $P_INI" >&2)
   local M_INI="$SMMC_BASEDIR/${CFG[mmc_bin_dir]}/multimc.cfg"
   [ -L multimc/multimc.cfg ] \
