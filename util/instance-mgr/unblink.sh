@@ -22,6 +22,7 @@ function unblink_default_tasks () {
   ensure_git_ignore . '
     /natives/
     /natives/ # auto-created and auto-removed(!!) by MultiMC.
+    /saves    # in case you store them here
     ' || return $?
 
   ensure_git_ignore dotmc '
