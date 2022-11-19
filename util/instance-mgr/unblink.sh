@@ -4,14 +4,15 @@
 
 function unblink_cli () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
-  local SELFPATH="$(readlink -m -- "$BASH_SOURCE"/..)"
+  local SELFFILE="$(readlink -m -- "$BASH_SOURCE")"
+  local SELFPATH="$(dirname -- "$SELFFILE")"
   # cd -- "$SELFPATH" || return $?
 
   local TASK="${1:-default_tasks}"
   unblink_"$TASK"
   local RV=$?
   [ "$RV" == 0 ] || sleep 2s
-  smart-less-pmb -e git sup --untracked-files=all -- .
+  tty --quiet <&2 && smart-less-pmb -e git sup --untracked-files=all -- .
   return "$RV"
 }
 
@@ -20,10 +21,16 @@ function unblink_default_tasks () {
   fixup_one_file 'instance.cfg' || return $?
 
   ensure_git_ignore . '
-    /natives/
-    /natives/ # auto-created and auto-removed(!!) by MultiMC.
-    /saves    # in case you store them here
+    /.minecraft/*   # having items inside means it is not a symlink yet.
+    /natives/       # auto-created and auto-removed(!!) by MultiMC.
+    /saves          # in case you store them here
     ' || return $?
+
+  [ -d dotmc ] || [ -L .minecraft ] || [ ! -d .minecraft ] || return 4$(
+    echo 'E: It looks like we do not have a dotmc -> .minecraft symlink yet.' \
+      'Please create that symlink while Minecraft is not running.' >&2)
+  git_add_symlink_if_target_is .minecraft dotmc || return $?
+  git_add_symlink_if_target_is unblink.sh "$SELFFILE" || return $?
 
   ensure_git_ignore dotmc '
     /bin
@@ -66,6 +73,11 @@ function unblink_default_tasks () {
 
   fixup_one_file 'mmc-pack.json' || return $?
   fixup_one_file 'dotmc/options.txt' || return $?
+}
+
+
+function git_add_symlink_if_target_is () {
+  [ -L "$1" ] && [ "$1" -ef "$2" ] && git add -- "$1"
 }
 
 
@@ -152,20 +164,33 @@ function fixup_one_file () {
 }
 
 
+function quote_paths_from_gitignore () {
+  sed -rf <(echo '
+    /\S/{
+      s!\s*#!\n&!
+      s!^!«««!
+      s!\n|$!»»»!
+    }
+    ')
+}
+
+
 function ensure_git_ignore () {
   local DIR="$1"; shift
   [ -d "$DIR" ] || return 0
   local PATT="$1"; shift
   PATT="$(<<<"$PATT" sed -nre 's~^\s+~~;/\S/p')"
   local GI="$DIR/.gitignore"
-  [ -s "$GI" ] || echo >>"$GI" || return $?
-  local HAVE="$(cat -- "$GI")"
-  local MISS="$(<<<"$PATT" grep -vxFe "$HAVE")"
+  [ -s "$GI" ] || >>"$GI" || return $?
+  local HAVE="$(<"$GI" quote_paths_from_gitignore)"
+  local MISS="$PATT"
+  [ -z "$HAVE" ] || MISS="$(
+    <<<"$PATT" quote_paths_from_gitignore | grep -vFe "$HAVE")"
 
   if [ -n "$MISS" ]; then
-    [ -n "$HAVE" ] && HAVE+=$'\n'
-    HAVE+=$'\n'"$MISS"
-    echo "$HAVE" >"$GI" || return $?$(echo "E: Failed to update $GI" >&2)
+    [ -z "$HAVE" ] || HAVE+=$'\n\n'
+    <<<"$HAVE$MISS" LANG=C sed -re 's!«««!!;s!»»»!!' >"$GI" || return $?$(
+      echo "E: Failed to update $GI" >&2)
   fi
 
   git add -- "$GI" || return $?$(echo "E: Failed to git add $GI" >&2)
