@@ -10,8 +10,8 @@ function unblink_cli () {
   local TASK="${1:-default_tasks}"
   unblink_"$TASK"
   local RV=$?
-  smart-less-pmb -e git sup --untracked-files=all -- dotmc/
-
+  [ "$RV" == 0 ] || sleep 2s
+  smart-less-pmb -e git sup --untracked-files=all -- .
   return "$RV"
 }
 
@@ -50,6 +50,17 @@ function unblink_default_tasks () {
     ' || return $?
 
   find dotmc/XaeroWorldMap/ -type f -name '*_config.txt' -empty -delete
+  find dotmc/XaeroWaypoints_BACKUP* -type d -empty -delete 2>/dev/null
+
+  ensure_git_ignore dotmc/config/worldedit '
+    /.archive-unpack
+    ' || return $?
+
+  ensure_git_ignore dotmc/config/roughlyenoughitems '
+    /changelog.txt
+    ' || return $?
+
+  rm --one-file-system -- dotmc/crash-reports/crash-20*-client.txt 2>/dev/null
 
   with_each_textfile fixup_one_file || return $?
 
@@ -107,7 +118,7 @@ function fixup_one_file () {
 
   case "$ITEM" in
     *.properties )
-      SED='2s~^# *([A-Z][a-z]{2} ){2}[ 0-9:]+ C?EST 20[0-9]{2}$~# (date)~';;
+      SED='2s~^# *([A-Z][a-z]{2} ){2}[ 0-9:]+ CES?T 20[0-9]{2}~# (date)~';;
 
     instance.cfg )
       SED='
